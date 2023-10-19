@@ -11,7 +11,7 @@ const bar = document.getElementById('bar-chart');
 
 
 // take data from API
-fetchData()
+fetchData("https://substantive.pythonanywhere.com/")
     .then(userActive => {
         // data processing and sorting by categories
         const selectorIds = userActive.map(obj => obj.sector_id); 
