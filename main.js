@@ -1,126 +1,77 @@
 "use strict"
 
+import getRandomColor from "./modules/randomColor.mjs";
+import createChart from "./modules/createChart.mjs";
+import createRowTable from "./modules/createRowTable.mjs";
+import fetchData from "./modules/fetchData.mjs";
 
 const table = document.querySelector('.table');
+const pie = document.getElementById('pie-chart');
+const bar = document.getElementById('bar-chart');
 
-async function fetchData() {
-    const data = await fetch("https://substantive.pythonanywhere.com/");
-    const resp = await data.json();
-    const user = await resp.interactions;
-    return user
-};
 
+// take data from API
 fetchData()
-    .then(resp => {
-        console.log(resp)
-        const obj = {};
-        for(let i = 1; i <= 11; i++) {
-            obj[i] = {
-                active: resp.filter(obj => obj.sector_id === i + ''),
-                percentages: Number((resp.filter(obj => obj.sector_id === i + '').length * 100 / resp.length).toFixed(1))
-            }
+    .then(userActive => {
+        // data processing and sorting by categories
+        const selectorIds = userActive.map(obj => obj.sector_id); 
+        const maxSelectorId = Math.max(...selectorIds); // max number of categories
+        
+        // creating object with sorted by categories
+        const userActiveSortedByCategory = {};
+        for(let i = 1; i <= maxSelectorId; i++) {
+            const filteredActives = userActive.filter(obj => obj.sector_id == i);
+
+            userActiveSortedByCategory[i] = {
+                active: filteredActives,
+                percent: Number((filteredActives.length * 100 / userActive.length).toFixed(1))
+            };
         };
-        return obj
+        
+        return {userActiveSortedByCategory, maxSelectorId};
+    }).then(obj => { 
+        // creating a table with data
+        const { userActiveSortedByCategory, maxSelectorId } = obj;
+        let allActive = 0;
+
+        for (let i = 1; i <= maxSelectorId; i++) {
+            allActive += +userActiveSortedByCategory[i].active.length // quantity active actions
+
+            // creating a row in the table
+            createRowTable(
+                userActiveSortedByCategory[i].active[1].name, 
+                userActiveSortedByCategory[i].active.length, 
+                userActiveSortedByCategory[i].percent, 
+                table
+            );
+        };
+
+        // filling the table 
+        createRowTable("Total:", allActive, '100 %', table);
+        return obj;
+    
     }).then(obj => {
-
-
-        function createTd(context, nameClass) {
-            const td = document.createElement('td');
-            td.textContent = context;
-            td.className = nameClass;
-            
-            return td
-        };
-
-        for (let i = 1; i <= 11; i++) {
-
-            const tr = document.createElement('tr');
-            tr.append(createTd(obj[i].active[1].name, "table__name"));
-            tr.append(createTd(obj[i].active.length, "table__count"));
-            tr.append(createTd(obj[i].percentages + ' %', "table__percentages"));
-
-            table.append(tr)
-        };
-
-
-        let allAcive = 0;
-        for(let i = 1; i <= 11; i++) allAcive += obj[i].active.length;
-
-        const tr = document.createElement('tr');
-        tr.append(createTd("Total:", "table__name"));
-        tr.append(createTd(allAcive, "table__count"));
-        tr.append(createTd('100 %', "table__percentages"));
-
-        table.append(tr);
-
-
-
-
-
-        const pie = document.getElementById('pie-chart');
-        const bar = document.getElementById('bar-chart');
-
+        // createing charts 
+        const { userActiveSortedByCategory, maxSelectorId } = obj;
+        const colors = [];
         let labelsActive = [];
-        let percentagesActive = []
-        for(let i = 1; i <= 11; i++) {
-            labelsActive.push(`${obj[i].active[0].name} ${obj[i].percentages} %`);
-            percentagesActive.push(obj[i].percentages);
-            
+        let percentActive = [];
+
+        for (let i = 1; i <= maxSelectorId; i++) {
+
+            const color = getRandomColor();
+            if(!colors.includes(color)) {
+                colors.push(color)
+            };
+
+            labelsActive.push(`${userActiveSortedByCategory[i].active[0].name} ${userActiveSortedByCategory[i].percent} %`);
+            percentActive.push(userActiveSortedByCategory[i].percent);
+
         };
-
-
-        new Chart(pie, {
-            type: 'pie',
-            data: {
-            labels: labelsActive,
-            datasets: [{
-                label: `%`,
-                data: percentagesActive,
-                borderWidth: 1,
-                backgroundColor: [
-                    '#f917dd', 
-                    '#ff18a1', 
-                    '#ff7680', 
-                    '#ffb67c', 
-                    '#ffdc81', 
-                    '#08abc5', 
-                    '#07c570', 
-                    '#a6ea51', 
-                    '#fffa8e', 
-                    '#fffad1', 
-                    '#e98597', 
-                ],
-              hoverOffset: 4
-            }]},
-            
-        });
-
-
-        new Chart(bar, {
-            type: 'bar',
-            data: {
-            labels: labelsActive,
-            datasets: [{
-                label: `%`,
-                data: percentagesActive,
-                borderWidth: 1,
-                backgroundColor: [
-                    '#f917dd', 
-                    '#ff18a1', 
-                    '#ff7680', 
-                    '#ffb67c', 
-                    '#ffdc81', 
-                    '#08abc5', 
-                    '#07c570', 
-                    '#a6ea51', 
-                    '#fffa8e', 
-                    '#fffad1', 
-                    '#e98597', 
-                ],
-              hoverOffset: 4
-            }]},
-            
-        });
-
+        
+        createChart(pie, 'pie', labelsActive, percentActive, colors);
+        createChart(bar, 'bar', labelsActive, percentActive, colors);
     });
+
 ;
+
