@@ -2,8 +2,7 @@ async function fetchData(link) {
   try {
       const data = await fetch(link);
       const resp = await data.json();
-      const userActive = await resp.interactions;
-      return userActive
+      return resp
   } catch (error) {
       alert(`An error occurred: ${error.message}`)
   }

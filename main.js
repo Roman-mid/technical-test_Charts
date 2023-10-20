@@ -12,8 +12,9 @@ const bar = document.getElementById('bar-chart');
 
 // take data from API
 fetchData("https://substantive.pythonanywhere.com/")
-    .then(userActive => {
+    .then(data => {
         // data processing and sorting by categories
+        const userActive = data.interactions;   
         const selectorIds = userActive.map(obj => obj.sector_id); 
         const maxSelectorId = Math.max(...selectorIds); // max number of categories
         
